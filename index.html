@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- Meta, title, CSS, favicons, etc. -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="">
+
+  <title>Saronlilty</title>
+
+  <link href="http://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css" rel="stylesheet">
+  <link href="http://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-theme.min.css" rel="stylesheet">
+  <link href="http://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css" rel="stylesheet">
+
+</head>
+
+<body>
+  <!-- Static navbar -->
+  <nav class="navbar">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <span class="navbar-brand">HTML5 Sensing Demonstration</span>
+    </div>
+    <div class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li><p class="navbar-text"><small><i>Supported browsers: Chrome, Firefox, Opera</i></small><p></li>
+      </ul>
+    </div><!--/.nav-collapse -->
+  </nav>
+  <div class="container">
+    <div class="row">
+      <h3>Camera and Microphone</h3>
+      <span id="spanMedia">
+      <div id="divCamera" class="col-md-6">
+        <h4>Camera</h4>
+        <video autoplay></video>
+      </div>
+      <div id="divMicrophone" class="col-md-6">
+        <h4>Microphone</h4>
+      </div>
+      </span>
+      <!--- /.spanMedia used in case camera/audio unavailable --->
+    </div>
+    <div class="row">
+      <h3>Physical properties of the device <small><i>For mobile phones</i></small></h3>
+      <div id="divLocation" class="col-md-4">
+        <h4>Location</h4>
+        <span id="spanLat">Getting latitude</span> : 
+        <span id="spanLon">Getting longitude</span>
+      </div>
+      <div id="divOrientation" class="col-md-4">
+        <h4>Orientation</h4>
+        <ul>
+          <li>Tilt Left/Right: <span id="spanTiltGamma">#</span>
+          <li>Tilt Front/Back: <span id="spanTiltBeta">#</span>
+          <li>Direction: <span id="spanTiltDir">#</span>
+        </ul>
+      </div>
+      <div id="divMotion" class="col-md-4">
+        <h4>Motion</h4>
+        <ul>
+          <li>Acceleration: <span id="spanMotionAccel">#</span>
+          <li>Acceleration with Gravity: <span id="spanMotionGrav">#</span>
+          <li>Rotation Rate: <span id="spanMotionRot">#</span>
+        </ul>
+      </div>
+    </div>
+    <div class="row">
+      <h3>Examples of Form Media Capture <small><i>For mobile phones</i></small></h3>
+      <div class="col-md-4">
+        Camera:
+        <input type="file" accept="image/*" capture="camera">
+      </div>
+      <div class="col-md-4">
+        Video:
+        <input type="file" accept="video/*" capture="camcorder">
+      </div>
+      <div class="col-md-4">
+        Audio:
+        <input type="file" accept="audio/*" capture="microphone">
+      </div>
+    </div>
+  </div> <!-- /container -->
+
+  <script src="http://code.jquery.com/jquery.js"></script>
+  <script src="http://netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
+  <script>
+    /** 
+     * This is a showcase page demonstrating the various information a webpage
+     *  can glean from the device accessing it.
+     * 
+     * Need check for feature support and permission for each feature.
+     * It would be easier to use something like Modernizr for vendor checking,
+     *  but this is a demo, so checking functions are visible.
+     *
+     * Drawn from:
+     * http://www.html5rocks.com/en/tutorials/getusermedia/intro/
+     * https://simpl.info/getusermedia/sources/
+     */
+    var video = document.querySelector('video');
+    window.AudioContext = window.AudioContext ||
+                          window.webkitAudioContext;
+    var context = new AudioContext();
+    
+    // check for media support (camera and microphone)
+    navigator.getUserMedia  = navigator.getUserMedia ||
+                              navigator.webkitGetUserMedia ||
+                              navigator.mozGetUserMedia ||
+                              navigator.msGetUserMedia;
+    if (navigator.getUserMedia) {
+      navigator.getUserMedia({audio: true, video: true}, function(stream) {
+        video.src = window.URL.createObjectURL(stream);
+        
+        var microphone = context.createMediaStreamSource(stream);
+        console.log(microphone);
+        var filter = context.createBiquadFilter();
+        microphone.connect(filter);
+        filter.connect(context.destination);
+      }, errorCallback);
+    } else {
+      message = 'User Media is not supported for this Browser/OS version';
+      document.getElementById('spanMedia').innerHTML = '<div class="alert alert-warning">'+message+'</div>';
+    }
+    
+    function errorCallback(error){
+      console.log (error)
+      message = 'Error with navigator.getUserMedia';
+      document.getElementById('spanMedia').innerHTML = '<div class="alert alert-warning">'+message+'</div>';
+    }
+    
+    // check for Geolocation support
+    if (navigator.geolocation) {
+      // Single use function that gets the current position
+      navigator.geolocation.getCurrentPosition(function(position) {
+        startPos = position;
+        document.getElementById("spanLat").innerHTML = startPos.coords.latitude;
+        document.getElementById("spanLon").innerHTML = startPos.coords.longitude;
+      });
+      
+      // Adds a persistent callback functionat constantly upates position
+      navigator.geolocation.watchPosition(function(position) {
+        document.getElementById("spanLat").innerHTML = position.coords.latitude;
+        document.getElementById("spaLon").innerHTML = position.coords.longitude;
+      });
+    }
+    else {
+      message = 'Geolocation is not supported for this Browser/OS version';
+      document.getElementById('divLocation').innerHTML = '<div class="alert alert-warning">'+message+'</div>';
+    }
+    
+    // check for Device orientation support
+    if (window.DeviceOrientationEvent) {
+      window.addEventListener('deviceorientation', function(eventData) {
+        // left -> right tilt
+        document.getElementById("spanTiltGamma").innerHTML = eventData.gamma;
+        
+        // back -> front tilt
+        document.getElementById("spanTiltBeta").innerHTML = eventData.beta;
+        
+        // compass direction
+        document.getElementById("spanTiltDir").innerHTML = eventData.alpha;
+      }, false);
+    }
+    else {
+      message = 'Device Orientation is not supported for this Browser/OS version';
+      document.getElementById('divOrientation').innerHTML = '<div class="alert alert-warning">'+message+'</div>';
+    }
+    
+        
+    // check for Device motion support
+    if (window.DeviceMotionEvent) {
+      window.addEventListener('devicemotion', function(eventData) {
+        // left -> right tilt
+        document.getElementById("spanMotionAccel").innerHTML = eventData.acceleration;
+        
+        // back -> front tilt
+        document.getElementById("spanMotionGrav").innerHTML = eventData.accelerationIncludingGravity;
+        
+        // compass direction
+        document.getElementById("spanMotionRot").innerHTML = eventData.rotationRate;
+      }, false);
+    }
+    else {
+      message = 'Device Motion is not supported for this Browser/OS version';
+      document.getElementById('divMotion').innerHTML = '<div class="alert alert-warning">'+message+'</div>';
+    }
+  </script>
+
+</body>
+</html>
